@@ -187,7 +187,7 @@ List *shrinkList(List *list, _uint max) {
 	return freeValList(list, max);
 }
 
-int calc(_uint num) {
+List *calc(_uint num) {
 	//_uint num = 2147483647;
 	List *primes = initStack();
 	const _uint max = (num / 104857600) + 1; // 100 mb
@@ -196,6 +196,5 @@ int calc(_uint num) {
 		const _uint top = num - (per_thread * (i - 1));
 		primes = expandList(primes, top, top - per_thread);
 	}
-	while ((primes = freeList(primes)) != NULL) {}
-	return 0;
+	return primes;
 }

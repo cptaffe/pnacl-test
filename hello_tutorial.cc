@@ -58,7 +58,22 @@ public:
 			PostMessage(message.AsString());
 		} else if (message.is_int()) {
 			PostMessage("running");
-			PostMessage(calc(message.AsInt()));
+			List *primes = calc(message.AsInt());
+			printListMsg(primes);
+			while ((primes = freeList(primes)) != NULL) {}
+		}
+	}
+
+	// Iterative print to combat stack overflow
+	void printListMsg(List *list) {
+		//int count = 0;
+		for (; list != NULL; list = (List *) list->link) {
+			if (list->data != 0) {
+				PostMessage(list->data);
+			}
+		}
+		if (list == NULL) {
+			cout << endl;
 		}
 	}
 };
