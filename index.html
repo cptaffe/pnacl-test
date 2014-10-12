@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html>
+  <!--
+  Copyright (c) 2013 The Chromium Authors. All rights reserved.
+  Use of this source code is governed by a BSD-style license that can be
+  found in the LICENSE file.
+  -->
+<head>
+
+  <title>Test</title>
+
+  <style type="text/css">
+  @import url("http://fonts.googleapis.com/css?family=Ubuntu");
+  * {
+    padding: 0;
+    margin: 0; }
+
+  body {
+    background-color: whitesmoke;
+    max-width: 750px;
+    padding: 0 10%;
+    margin: auto;
+    padding-top: 20px;
+    font-family: "Ubuntu", sans-serif; }
+
+  #message-log {
+    margin-top: 5px;
+    margin-bottom: 5px;
+    padding: 5px;
+    background-color: rgba(40, 40, 40, 0.2);
+    border-radius: 3px;
+  }
+  </style>
+
+  <script type="text/javascript">
+    mod = null;  // Global application object.
+    statusText = 'no status';
+
+    // Indicate load success.
+    function moduleDidLoad() {
+      mod = document.getElementById('pnacl_stuffs');
+      updateStatus('success');
+    }
+
+    // Handle NaCl message
+    function handleMessage(message) {
+      //alert("worked...");
+      msgtext = message.data;
+      par = document.createElement("p");
+      par.appendChild(document.createTextNode(msgtext));
+      document.getElementById('message-log').appendChild(par);
+    }
+
+    function sendMessage(message) {
+      if (isNaN(message)) {
+        mod.postMessage(message);
+      } else {
+        mod.postMessage(parseInt(message));
+      }
+    }
+
+    function pageDidLoad() {
+      if (mod == null) {
+        updateStatus('loading...');
+      } else {
+        // In case NaCl loaded before page, actually display message.
+        updateStatus();
+      }
+    }
+
+    function updateStatus(opt_message) {
+      if (opt_message)
+        statusText = opt_message;
+      var statusField = document.getElementById('statusField');
+      if (statusField) {
+        statusField.innerHTML = statusText;
+      }
+    }
+  </script>
+</head>
+<body onload="pageDidLoad()">
+
+  <h1>Test page</h1>
+  <!--
+  Load the published pexe.
+  Note: Since this module does not use any real-estate in the browser, its
+  width and height are set to 0.
+
+  Note: The <embed> element is wrapped inside a <div>, which has both a 'load'
+  and a 'message' event listener attached.  This wrapping method is used
+  instead of attaching the event listeners directly to the <embed> element to
+  ensure that the listeners are active before the NaCl module 'load' event
+  fires.  This also allows you to use PPB_Messaging.PostMessage() (in C) or
+  pp::Instance.PostMessage() (in C++) from within the initialization code in
+  your module.
+  -->
+  <div id="listener" display="hidden">
+    <script type="text/javascript">
+      var listener = document.getElementById('listener');
+      listener.addEventListener('load', moduleDidLoad, true);
+      listener.addEventListener('message', handleMessage, true);
+    </script>
+
+    <embed id="pnacl_stuffs"
+           width=0 height=0
+           src="hello_tutorial.nmf"
+           type="application/x-pnacl" />
+  </div>
+
+  <p id="statusField">no status</p>
+
+  <input id="input-box" type="text" />
+  <button onclick="sendMessage(document.getElementById('input-box').value)">send</button>
+
+  <p id="message-log"></p>
+</body>
+</html>
