@@ -35,6 +35,8 @@
   <script type="text/javascript">
     mod = null;  // Global application object.
     statusText = 'no status';
+    printArray = false;
+
 
     // Indicate load success.
     function moduleDidLoad() {
@@ -46,9 +48,23 @@
     function handleMessage(message) {
       //alert("worked...");
       msgtext = message.data;
-      par = document.createElement("p");
-      par.appendChild(document.createTextNode(msgtext));
-      document.getElementById('message-log').appendChild(par);
+      if (printArray) {
+        var arr = new Int32Array(msgtext);
+        str = ""
+        for (var i = 0; i < arr.length; i++) {
+          str += arr[i].toString();
+          if (i < arr.length - 1) {
+            str += ', ';
+          }
+        }
+        par = document.createElement("p");
+        par.appendChild(document.createTextNode(str));
+        document.getElementById('message-log').appendChild(par);
+      } else {
+        par = document.createElement("p");
+        par.appendChild(document.createTextNode(msgtext));
+        document.getElementById('message-log').appendChild(par);
+      }
     }
 
     function sendMessage(message) {
@@ -56,6 +72,7 @@
         mod.postMessage(message);
       } else {
         mod.postMessage(parseInt(message));
+        printArray = true;
       }
     }
 

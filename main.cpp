@@ -4,56 +4,29 @@
 // realloc for larger and smaller numbers, filling
 // in all of the positions with prime numbers.
 
-#include <iostream>
-#include <string>
 #include <cmath>
 #include <cstdlib>
+#include "ppapi/cpp/instance.h"
+#include "ppapi/cpp/var.h"
+#include "ppapi/cpp/var_array_buffer.h"
 
 using namespace std;
 
-typedef struct {
-	void *link;
-	int data;
-} List;
-
-typedef int32_t _uint;
-
-void error (const char *str) {
-	cerr << "Err: " << str << endl;
-	exit(1);
-}
-
-List *listLink(List *list, _uint item) {
-	List *new_list;
-	try {
-		new_list = new List;
-	} catch (std::bad_alloc& ba) {
-		error("listLink: new_list did not allocate");
-	}
-	new_list->data = item;
-	new_list->link = NULL;
-	list->link = new_list;
-	return new_list;
-}
-
-List *atkinSievePrimeGen(List *list, _uint min, _uint max) {
+pp::Var atkinSievePrimeGen(int32_t min, int32_t max) {
 	//Create the various different variables required
 	int root = ceil(sqrt(max));
 	const int sieve_size = max - (min - 1);
 	bool *sieve;
-	try {
-		sieve = new bool[sieve_size];
-	} catch (std::bad_alloc& ba) {
-		error("atkinSievePrimeGen: sieve did not allocate");
-	}
+	
+	sieve = new bool[sieve_size];
 
-	for (_uint i = 0; i < sieve_size; i++) {
+	for (int32_t i = 0; i < sieve_size; i++) {
 		sieve[i] = false;
 	}
 
-	for (_uint x = 1; x <= root; x++) {
-		for (_uint y = 1; y <= root; y++) {
-			_uint n = (4 * x * x) + (y * y);
+	for (int32_t x = 1; x <= root; x++) {
+		for (int32_t y = 1; y <= root; y++) {
+			int32_t n = (4 * x * x) + (y * y);
 			if (n <= max && n > min && (n % 12 == 1 || n % 12 == 5)) {
 					sieve[n - min] ^= true;
 			}
@@ -71,130 +44,46 @@ List *atkinSievePrimeGen(List *list, _uint min, _uint max) {
 	}
 
 	//Mark all multiples of squares as non-prime
-	for (_uint i = min; i <= root; i++) {
+	for (int32_t i = min; i <= root; i++) {
 		if (sieve[i - min]) {
-			for (_uint j = i * i; j < max; j += i * i) {
+			for (int32_t j = i * i; j < max; j += i * i) {
 				sieve[j - min] = false;
 			}
 		}
 	}
 
-	for (_uint i = max; i > min; i--) {
+	int prime_count;
+	for (int32_t i = max; i > min; i--) {
 		if (sieve[i - min]) {
-			list = listLink(list, i);
+			prime_count++;
 		}
 	}
 
-	if (min <= 3 && max > 3) {list = listLink(list, 3);}
-	if (min <= 2 && max > 2) {list = listLink(list, 2);}
+	pp::VarArrayBuffer var_arr = pp::VarArrayBuffer::VarArrayBuffer(sizeof(int32_t) * prime_count);
+	int32_t *arr = static_cast<int32_t *>(var_arr.Map());
+
+	if (min <= 3 && max > 3) {arr[1] = 3;}
+	if (min <= 2 && max > 2) {arr[0] = 2;}
+
+	int32_t index = 2;
+	for (int32_t i = 0; i < max - 2; i++) {
+		if (sieve[i - min]) {
+			arr[index++] = i;
+		}
+	}
+
 
 	// free array
 	delete[] sieve;
 
-	return list;
+	return pp::Var(var_arr);
 }
 
-// prime generation wrapper
-List *genPrimes(_uint max, _uint min, List *list) {
-	return atkinSievePrimeGen(list, min, max);
-}
-
-List *initStack() {
-	// calloc sets len/size to 0 and pointer to NULL
-	List *list;
+pp::Var calc(int32_t num) {
+	//int32_t num = 2147483647;
 	try {
-		list = new List;
-	} catch (std::bad_alloc& ba) {
-		error("initStack: init list did not allocate");
+		return atkinSievePrimeGen(0, num);
+	} catch (...) {
+		return pp::Var("prime calculation failed");
 	}
-	list->link = NULL;
-	list->data = 0;
-	return list;
-}
-
-List *freeList(List *list) {
-	if (list == NULL) {
-		return NULL;
-	}
-	List *next = (List *) list->link;
-	delete list;
-	return next;
-}
-
-void print3List(List *list) {
-	if (list == NULL) {
-		cout << endl;
-		return;
-	}
-	if (list->data != 0) {
-		cout << list->data << ", ";
-	}
-	print3List((List *) list->link);
-}
-
-// Iterative print to combat stack overflow
-void printList(List *list) {
-	//int count = 0;
-	for (; list != NULL; list = (List *) list->link) {
-		if (list->data != 0) {
-			//if(count == 100) {
-				cout << list->data << ", ";
-				//count = 0;
-			//}
-			//count++;
-		}
-	}
-	if (list == NULL) {
-		cout << endl;
-	}
-}
-
-int lenList(List *list) {
-	int n;
-	if (list == NULL) {
-		return 0;
-	} else {
-		return 1 + lenList((List *) list->link);
-	}
-}
-
-// iterified concat list
-List *concatList(List *list, List *nlist) {
-	for (; list->link != NULL; list = (List *) list->link) {}
-	list->link = (void *) nlist;
-	return list;
-}
-
-// iterified frees
-List *freeValList(List *list, uint n) {
-	List *next = list;
-	for (;list->data == 0 || list->data > n; list = next) {
-		next = (List *) list->link;
-		delete list;
-	}
-	return list;
-}
-
-List *expandList(List *list, _uint max, _uint min) {
-	// expands list, adding new primes
-	List *new_list = initStack();
-	genPrimes(max, min, new_list);
-	concatList(new_list, list);
-	return new_list;
-}
-
-List *shrinkList(List *list, _uint max) {
-	return freeValList(list, max);
-}
-
-List *calc(_uint num) {
-	//_uint num = 2147483647;
-	List *primes = initStack();
-	const _uint max = (num / 104857600) + 1; // 100 mb
-	const _uint per_thread = num / max;
-	for (_uint i = max; i > 0; i--) {
-		const _uint top = num - (per_thread * (i - 1));
-		primes = expandList(primes, top, top - per_thread);
-	}
-	return primes;
 }

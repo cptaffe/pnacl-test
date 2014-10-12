@@ -54,26 +54,8 @@ public:
 	// @param[in] var_message The message posted by the browser.
 	virtual void HandleMessage(const pp::Var &message) {
 		// TODO(sdk_user): 1. Make this function handle the incoming message.
-		if (message.is_string()) {
-			PostMessage(message.AsString());
-		} else if (message.is_int()) {
-			PostMessage("running");
-			List *primes = calc(message.AsInt());
-			printListMsg(primes);
-			while ((primes = freeList(primes)) != NULL) {}
-		}
-	}
-
-	// Iterative print to combat stack overflow
-	void printListMsg(List *list) {
-		//int count = 0;
-		for (; list != NULL; list = (List *) list->link) {
-			if (list->data != 0) {
-				PostMessage(list->data);
-			}
-		}
-		if (list == NULL) {
-			cout << endl;
+		if (message.is_int()) {
+			PostMessage(calc(message.AsInt()));
 		}
 	}
 };
